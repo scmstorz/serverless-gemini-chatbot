@@ -9,7 +9,9 @@ This is a chatbot that runs entirely in the user's browser (client-side) using J
 * **Backend/Proxy:** Google Cloud Run function (e.g., written in Node.js, Python, Go - specify the language)
 * **AI Model:** Google Vertex AI (Gemini)
 
-*(Optional: Add a screenshot or GIF of the chatbot in action here)*
+![image](https://github.com/user-attachments/assets/e4d131ed-0552-4f17-9f3c-926b5f0acac9)
+You can test how it works on http://www.storz.net.
+
 ## ✨ Features
 
 * Interactive chat interface in the browser.

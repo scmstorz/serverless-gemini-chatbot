@@ -10,6 +10,7 @@ This is a chatbot that runs entirely in the user's browser (client-side) using J
 * **AI Model:** Google Vertex AI (Gemini)
 
 ![image](https://github.com/user-attachments/assets/e4d131ed-0552-4f17-9f3c-926b5f0acac9)
+
 You can test how it works on http://www.storz.net.
 
 ## ✨ Features

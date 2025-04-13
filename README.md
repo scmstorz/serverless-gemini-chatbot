@@ -1,6 +1,8 @@
 # serverless-gemini-chatbot - A Client-Side Vertex AI Chatbot
 A chatbot running with JS on the browser-client-side using a Google Cloud Run Function as proxy to Vertex AI (Gemini). 
 
+IMPORTANT: Read the security information at the end of this README!
+
 ## 💬 Short Description
 
 This is a chatbot that runs entirely in the user's browser (client-side) using JavaScript. It communicates with Google Cloud's Vertex AI API (Gemini model) via a server-side proxy function running on Google Cloud Run.
@@ -122,6 +124,56 @@ This project is licensed under the [MIT License](LICENSE) (or your chosen licens
 
 Contributions are welcome! Please read `CONTRIBUTING.md` for details on our code of conduct and the process for submitting pull requests.
 
+## Security Considerations: Protecting the Cloud Function Endpoint
+
+This project utilizes a client-side JavaScript chatbot interface that communicates with a Google Cloud Function (`[Your Function Name, e.g., Gemini Proxy]`). This function acts as a backend proxy, forwarding requests to a paid Large Language Model service (e.g., Gemini via Vertex AI).
+
+**WARNING: Critical Security Concern**
+
+The URL endpoint of the deployed Cloud Function might be publicly discoverable by inspecting the website's client-side source code. If this endpoint is left unsecured, it creates significant risks:
+
+1.  **Unauthorized Access:** Anyone who finds the URL can send requests directly to your Cloud Function, bypassing your website entirely.
+2.  **Billing Abuse:** Since the Cloud Function calls a paid LLM service using your credentials, unauthorized requests can lead to unexpected and potentially substantial costs billed to your Google Cloud account.
+3.  **Automated Abuse (Bots):** Malicious bots could flood your endpoint with requests, causing high costs and potentially disrupting the service.
+
+**Mitigation Strategy: Server-Side Protection**
+
+To protect your function and control costs, it is **essential** to implement security measures **on the server-side** (within the Cloud Function code or using Google Cloud infrastructure). Client-side checks alone are insufficient as they can be easily bypassed.
+
+A layered approach is recommended:
+
+1.  **CORS (Cross-Origin Resource Sharing):**
+    * **Action:** Configure your Cloud Function to only allow requests originating from your specific website domain(s) by setting the `Access-Control-Allow-Origin` HTTP header appropriately.
+    * **Purpose:** Prevents *other websites'* JavaScript from calling your function via a user's browser.
+    * **Limitation:** Does **not** block direct server-to-server calls (e.g., using `curl`, scripts) or other non-browser clients.
+
+2.  **reCAPTCHA v3 Verification (Strongly Recommended, this is what I use on my website http://www.storz.net):**
+    * **Action:**
+        * Integrate reCAPTCHA v3 (or Enterprise) on your website frontend. Register your domain(s) with Google to get a site key (public) and secret key (private).
+        * Modify the client-side JavaScript to obtain a reCAPTCHA token when the user sends a message.
+        * Send this token along with the user's prompt to the Cloud Function.
+        * **Crucially:** Implement verification logic *within the Cloud Function*. Before calling the LLM, the function must make a server-side call to the Google reCAPTCHA `siteverify` API endpoint, sending its secret key and the received token.
+    * **Purpose:** Verifies that the request likely originates from a human user interacting with your registered domain, effectively blocking most bots and automated scripts. This strongly "ties" the backend function to legitimate frontend usage.
+    * **Action on Failure:** Reject requests that have missing, invalid tokens, or (for v3) a score below your defined threshold.
+
+3.  **Rate Limiting:**
+    * **Action:** Implement limits on the number of requests allowed from a single source (e.g., IP address) within a specific time window.
+    * **Purpose:** Protects against brute-force or high-volume attacks from individual sources.
+    * **Implementation:** Consider using Google Cloud Armor in front of your Cloud Run service for robust rate limiting capabilities.
+
+4.  **Monitoring and Budget Alerts:**
+    * **Action:**
+        * Regularly monitor your Cloud Function logs and metrics (invocations, errors, execution times) for anomalies.
+        * **Set up Google Cloud Billing budget alerts** for your project to receive immediate notifications if costs approach or exceed predefined thresholds.
+    * **Purpose:** Provides visibility into usage patterns and acts as a critical safety net against unexpected billing.
+
+5.  **(Optional) Authentication:**
+    * **Action:** For higher security needs, implement user authentication (e.g., using Firebase Authentication or Google Identity Platform). Require requests to the Cloud Function to include a valid, server-verified identity token (e.g., JWT).
+    * **Purpose:** Ensures requests come only from known, logged-in users.
+
+**Conclusion:**
+
+Implementing robust server-side security, particularly **reCAPTCHA verification** and **billing alerts**, is vital for the safe operation of this chatbot project. Do not deploy publicly without securing the Cloud Function endpoint.
 ---
 
 
